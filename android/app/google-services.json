@@ -1,0 +1,90 @@
+{
+  "project_info": {
+    "project_number": "1050701892775",
+    "project_id": "saloonshop-5b880",
+    "storage_bucket": "saloonshop-5b880.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1050701892775:android:828f8eae8769c904291f82",
+        "android_client_info": {
+          "package_name": "com.example.saloon_cult_admin"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1050701892775-2gnmu9r8hbt6cn8tbho6a4hvr65eietu.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBZk1ZwivwaYXycAkPlHTVc7KHIgeXH7jk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1050701892775-2gnmu9r8hbt6cn8tbho6a4hvr65eietu.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "1050701892775-5pcp98kgp3el78pe0hpeph149510veeu.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.saloonshop"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1050701892775:android:ff145dc6b2ba86b5291f82",
+        "android_client_info": {
+          "package_name": "com.example.saloonshop"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1050701892775-am4m05lgf5217g0n9v1q7u3gnav41b3j.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.saloonshop",
+            "certificate_hash": "fbe0751b8e2f08b7d425375d7339e13c36ef3703"
+          }
+        },
+        {
+          "client_id": "1050701892775-2gnmu9r8hbt6cn8tbho6a4hvr65eietu.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBZk1ZwivwaYXycAkPlHTVc7KHIgeXH7jk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1050701892775-2gnmu9r8hbt6cn8tbho6a4hvr65eietu.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "1050701892775-5pcp98kgp3el78pe0hpeph149510veeu.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.saloonshop"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
