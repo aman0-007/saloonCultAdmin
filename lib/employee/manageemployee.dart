@@ -3,6 +3,7 @@ import 'package:saloon_cult_admin/Authentication/authentication.dart';
 import 'package:saloon_cult_admin/colors.dart';
 import 'package:saloon_cult_admin/drawer/drawer.dart';
 import 'package:saloon_cult_admin/employee/addemployee.dart';
+
 class Employeemangement extends StatefulWidget {
   const Employeemangement({super.key});
 
@@ -66,20 +67,29 @@ class _EmployeemangementState extends State<Employeemangement> {
   void _showAddEmployeeDialog(BuildContext context) {
     showModalBottomSheet(
       context: context,
+      isScrollControlled: true, // Allows the modal to adjust its size based on keyboard
       builder: (BuildContext context) {
-        return Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: SingleChildScrollView(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Add Employee',
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(color: AppColors.primaryYellow),
-                ),
-                const SizedBox(height: 16.0),
-                EmployeeForm(employeeService: _employeeService),
-              ],
+        return AnimatedPadding(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(context).viewInsets.bottom, // Adjusts for keyboard height
+          ),
+          duration: const Duration(milliseconds: 300), // Smooth transition duration
+          curve: Curves.easeInOut, // Smooth curve for padding adjustment
+          child: SingleChildScrollView( // Ensures the whole form can move above the keyboard
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min, // Adjust height based on content
+                children: [
+                  Text(
+                    'Add Employee',
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(color: AppColors.primaryYellow),
+                  ),
+                  const SizedBox(height: 16.0),
+                  EmployeeForm(employeeService: _employeeService),
+                ],
+              ),
             ),
           ),
         );
