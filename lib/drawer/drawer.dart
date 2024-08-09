@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:saloon_cult_admin/Authentication/authentication.dart';
+import 'package:saloon_cult_admin/Manage/Manage.dart';
 import 'package:saloon_cult_admin/account/login.dart';
 import 'package:saloon_cult_admin/colors.dart';
 import 'package:saloon_cult_admin/dashboard.dart';
@@ -102,10 +103,10 @@ class DashboardDrawer extends StatelessWidget {
                     title: const Text('Manage', style: TextStyle(color: AppColors.primaryYellow)),
                     onTap: () {
                       Navigator.pop(context);
-                      // Navigator.push(
-                      //   context,
-                      //   MaterialPageRoute(builder: (context) => const Ownermanage()),
-                      // );
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const Ownermanage()),
+                      );
                     },
                   ),
                   const Divider(),

@@ -199,7 +199,7 @@ class Authentication {
     }
   }
 
-  Future<void> saveShopTimings() async {
+  Future<void> saveShopTimings(Map<String, bool> selectedDays, Map<String, TimeOfDay> openTimes, Map<String, TimeOfDay> closeTimes) async {
     try {
       SharedPreferences prefs = await SharedPreferences.getInstance();
       String? userId = prefs.getString('userId');
@@ -209,11 +209,11 @@ class Authentication {
 
         Map<String, Map<String, dynamic>> timings = {};
 
-        _selectedDays.forEach((day, isSelected) {
+        selectedDays.forEach((day, isSelected) {
           if (isSelected) {
             timings[day] = {
-              'openTime': _combineTime(_openTimes[day]!),
-              'closeTime': _combineTime(_closeTimes[day]!),
+              'openTime': _combineTime(openTimes[day]!),
+              'closeTime': _combineTime(closeTimes[day]!),
             };
           } else {
             timings[day] = {'status': 'closed'};
@@ -235,8 +235,12 @@ class Authentication {
     }
   }
 
-  TimeOfDay _combineTime(TimeOfDay time) {
-    return TimeOfDay(hour: time.hour, minute: time.minute);
+  String _combineTime(TimeOfDay time) {
+    final isAM = time.hour < 12;
+    final hourIn12Format = time.hour % 12 == 0 ? 12 : time.hour % 12;
+    final amPm = isAM ? 'AM' : 'PM';
+
+    return '${hourIn12Format.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')} $amPm';
   }
 
   User? getCurrentUser() {
