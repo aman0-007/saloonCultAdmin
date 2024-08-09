@@ -5,9 +5,9 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:saloon_cult_admin/account/Register.dart';
 
-// Authentication class for handling Firebase Auth, Firestore, and Storage
 class Authentication {
   final FirebaseFirestore firestore = FirebaseFirestore.instance;
   final FirebaseStorage _storage = FirebaseStorage.instance;
@@ -27,16 +27,6 @@ class Authentication {
   final Map<String, TimeOfDay?> _openTimes = {};
   final Map<String, TimeOfDay?> _closeTimes = {};
 
-  Authentication() {
-    _auth.authStateChanges().listen((User? user) {
-      if (user != null) {
-        print('User is signed in: ${user.email}');
-      } else {
-        print('User is signed out');
-      }
-    });
-  }
-
   Future<void> registerShopWithEmailAndPassword(BuildContext context, String shopName, File profileImage, File bannerImage, Position currentPosition, String address, String email, String password) async {
     try {
       UserCredential userCredential = await _auth.createUserWithEmailAndPassword(
@@ -54,7 +44,7 @@ class Authentication {
         'profileImage': profileImageUrl,
         'bannerImage': bannerImageUrl,
         'currentPosition': GeoPoint(currentPosition.latitude, currentPosition.longitude),
-        'address' : address,
+        'address': address,
         'email': email,
       });
 
@@ -86,8 +76,7 @@ class Authentication {
     }
   }
 
-
-  Future<User?> signInWithEmailAndPassword(String email, String password) async {
+  Future<void> signInWithEmailAndPassword(BuildContext context, String email, String password) async {
     try {
       UserCredential userCredential = await _auth.signInWithEmailAndPassword(
         email: email,
@@ -95,14 +84,24 @@ class Authentication {
       );
 
       User? user = userCredential.user;
-      return user;
+      if (user != null) {
+        // Save user ID to SharedPreferences
+        SharedPreferences prefs = await SharedPreferences.getInstance();
+        await prefs.setString('userId', user.uid);
+      }
     } catch (e) {
       print('Sign-in failed: $e');
-      return null;
     }
   }
 
-  Future<void> registerEmployeeWithEmailAndPassword(BuildContext context, String employeeName, String mobileNumber, String email, String password, File profileImage) async {
+  Future<void> registerEmployeeWithEmailAndPassword(
+      BuildContext context,
+      String employeeName,
+      String mobileNumber,
+      String email,
+      String password,
+      File profileImage,
+      ) async {
     try {
       // Create user with email and password
       UserCredential userCredential = await _auth.createUserWithEmailAndPassword(
@@ -110,12 +109,19 @@ class Authentication {
         password: password,
       );
 
-      // Get the newly created user's UID
-      String userId = userCredential.user?.uid ?? '';
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      String? userId = prefs.getString('userId');
+
+      // Generate a unique filename for the profile image
+      String timestamp = DateTime.now().millisecondsSinceEpoch.toString();
+      String profileImageFilename = 'employee_image_$timestamp.jpg';
 
       // Upload profile image and get its URL
-      String profileImageUrl = await _uploadImage(profileImage, userId, 'profile_image.jpg');
-
+      String profileImageUrl = await _uploadImage(
+        profileImage,
+        userId!,
+        profileImageFilename, // Use unique filename
+      );
 
       // Save employee data to Firestore
       await firestore
@@ -143,11 +149,12 @@ class Authentication {
 
   Future<void> addShopMenuItem(BuildContext context, String name, String price, String time) async {
     try {
-      User? currentUser = _auth.currentUser;
-      if (currentUser != null) {
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      String? userId = prefs.getString('userId');
+      if (userId != null) {
         await firestore
             .collection('shops')
-            .doc(currentUser.uid)
+            .doc(userId)
             .collection('menu')
             .add({
           'menuName': name,
@@ -171,9 +178,10 @@ class Authentication {
 
   Future<void> saveSlotTime(String slotTime) async {
     try {
-      User? currentUser = _auth.currentUser;
-      if (currentUser != null) {
-        var shopRef = firestore.collection('shops').doc(currentUser.uid);
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      String? userId = prefs.getString('userId');
+      if (userId != null) {
+        var shopRef = firestore.collection('shops').doc(userId);
         var shopDoc = await shopRef.get();
 
         if (shopDoc.exists) {
@@ -193,9 +201,10 @@ class Authentication {
 
   Future<void> saveShopTimings() async {
     try {
-      User? currentUser = _auth.currentUser;
-      if (currentUser != null) {
-        var shopRef = firestore.collection('shops').doc(currentUser.uid);
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      String? userId = prefs.getString('userId');
+      if (userId != null) {
+        var shopRef = firestore.collection('shops').doc(userId);
         var shopDoc = await shopRef.get();
 
         Map<String, Map<String, dynamic>> timings = {};
@@ -231,56 +240,35 @@ class Authentication {
   }
 
   User? getCurrentUser() {
-    return _auth.currentUser;
+    return FirebaseAuth.instance.currentUser;
   }
 
   bool isUserLoggedIn() {
     return _auth.currentUser != null;
   }
-}
 
-// AuthWrapper to handle authentication state and navigate to appropriate pages
-class AuthWrapper extends StatelessWidget {
-  final Widget home;
-  final Widget login;
+  Future<void> signOut(BuildContext context) async {
+    try {
+      final auth = FirebaseAuth.instance;
 
-  const AuthWrapper({required this.home, required this.login, super.key});
+      await auth.signOut();
 
-  @override
-  Widget build(BuildContext context) {
-    return StreamBuilder<User?>(
-      stream: FirebaseAuth.instance.authStateChanges(),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
-        }
-        if (snapshot.hasData) {
-          return home;
-        }
-        return login;
-      },
-    );
-  }
-}
+      // Clear SharedPreferences
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      await prefs.remove('userId');
 
-// Sign out function
-Future<void> signOut(BuildContext context) async {
-  try {
-    final auth = FirebaseAuth.instance;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Signed out')),
+      );
 
-    await auth.signOut();
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Signed out')),
-    );
-
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(builder: (context) => const Register()),  // Replace with your actual page
-    );
-  } catch (error) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Failed to sign out')),
-    );
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const Register()),  // Replace with your actual page
+      );
+    } catch (error) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Failed to sign out')),
+      );
+    }
   }
 }

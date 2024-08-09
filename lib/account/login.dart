@@ -149,14 +149,8 @@ class _LoginState extends State<Login> {
       onPressed: () async {
         String email = _emailController.text;
         String password = _passwordController.text;
-        User? user = await _authentication.signInWithEmailAndPassword(email, password);
-        if (user != null) {
-          // Navigate to the next screen
-          // Navigator.pushReplacement(
-          //   context,
-          //   MaterialPageRoute(builder: (context) => const Ownerdashboard()),
-          // );
-        }
+        await _authentication.signInWithEmailAndPassword(context, email, password);
+
       },
       style: ElevatedButton.styleFrom(
         backgroundColor: AppColors.primaryYellow,

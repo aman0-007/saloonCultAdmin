@@ -1,6 +1,8 @@
- import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:saloon_cult_admin/account/login.dart';
 import 'package:saloon_cult_admin/dashboard.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -20,23 +22,52 @@ class MyApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
         useMaterial3: true,
       ),
-      home: const Dashboard(),
+      home: const AuthChecker(),
     );
   }
 }
 
-class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key});
+class AuthChecker extends StatefulWidget {
+  const AuthChecker({super.key});
 
   @override
-  State<MyHomePage> createState() => _MyHomePageState();
+  _AuthCheckerState createState() => _AuthCheckerState();
 }
 
-class _MyHomePageState extends State<MyHomePage> {
+class _AuthCheckerState extends State<AuthChecker> {
+  late Future<bool> _isLoggedIn;
+
+  @override
+  void initState() {
+    super.initState();
+    _isLoggedIn = _checkLoginStatus();
+  }
+
+  Future<bool> _checkLoginStatus() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? userId = prefs.getString('userId');
+    return userId != null;
+  }
+
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
-      body:Center(child: Text("Aman",style: TextStyle(color: Colors.white),)),
+    return FutureBuilder<bool>(
+      future: _isLoggedIn,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        if (snapshot.hasData) {
+          if (snapshot.data!) {
+            // User is logged in
+            return const Dashboard(); // Replace with your actual home page widget
+          } else {
+            // User is not logged in
+            return const Login(); // Replace with your actual login page widget
+          }
+        }
+        return const Center(child: Text('Error checking login status'));
+      },
     );
   }
 }

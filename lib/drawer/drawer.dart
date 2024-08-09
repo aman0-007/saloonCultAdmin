@@ -1,13 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:saloon_cult_admin/Authentication/authentication.dart';
+import 'package:saloon_cult_admin/account/login.dart';
 import 'package:saloon_cult_admin/colors.dart';
 import 'package:saloon_cult_admin/dashboard.dart';
 import 'package:saloon_cult_admin/employee/manageemployee.dart';
+import 'package:saloon_cult_admin/menu/managemenu.dart';
 
 class DashboardDrawer extends StatelessWidget {
   const DashboardDrawer({super.key});
-
   @override
   Widget build(BuildContext context) {
+    final Authentication auth = Authentication();
     return Drawer(
       child: Container(
         color: Colors.white,
@@ -70,10 +73,10 @@ class DashboardDrawer extends StatelessWidget {
                     title: const Text('Menu', style: TextStyle(color: AppColors.primaryYellow)),
                     onTap: () {
                       Navigator.pop(context);
-                      // Navigator.push(
-                      //   context,
-                      //   MaterialPageRoute(builder: (context) => const Menumanagement()),
-                      // );
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const MenuManagement()),
+                      );
                     },
                   ),
                   ListTile(
@@ -109,8 +112,12 @@ class DashboardDrawer extends StatelessWidget {
                   ListTile(
                     leading: const Icon(Icons.exit_to_app, color: Colors.redAccent),
                     title: const Text('Sign Out', style: TextStyle(color: Colors.redAccent)),
-                    onTap: () {
-                      // Perform sign out
+                    onTap: () async {
+                      await auth.signOut(context);  // Call the signOut function
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(builder: (context) => const Login()), // Replace with your actual login page widget
+                      );
                     },
                   ),
                 ],

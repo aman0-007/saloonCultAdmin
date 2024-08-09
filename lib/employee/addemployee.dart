@@ -5,9 +5,9 @@ import 'package:saloon_cult_admin/Authentication/authentication.dart';
 import 'package:saloon_cult_admin/colors.dart';
 
 class EmployeeForm extends StatefulWidget {
-  final Authentication employeeService;
+  final VoidCallback? onFormSubmitted; // Add the callback parameter
 
-  const EmployeeForm({super.key, required this.employeeService});
+  const EmployeeForm({Key? key, this.onFormSubmitted}) : super(key: key);
 
   @override
   _EmployeeFormState createState() => _EmployeeFormState();
@@ -20,6 +20,8 @@ class _EmployeeFormState extends State<EmployeeForm> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   File? _profileImage;
+
+  final Authentication auth = Authentication();
 
   Future<void> _pickImage() async {
     final ImagePicker picker = ImagePicker();
@@ -93,9 +95,9 @@ class _EmployeeFormState extends State<EmployeeForm> {
             ),
             const SizedBox(height: 24.0),
             ElevatedButton(
-              onPressed: () {
+              onPressed: () async {
                 if (_formKey.currentState?.validate() ?? false) {
-                  widget.employeeService.registerEmployeeWithEmailAndPassword(
+                  await auth.registerEmployeeWithEmailAndPassword(
                     context,
                     _nameController.text,
                     _mobileController.text,
@@ -103,6 +105,12 @@ class _EmployeeFormState extends State<EmployeeForm> {
                     _passwordController.text,
                     _profileImage!,
                   );
+
+                  // Call the callback if it's provided
+                  if (widget.onFormSubmitted != null) {
+                    widget.onFormSubmitted!();
+                  }
+
                   Navigator.pop(context); // Close the bottom sheet after submission
                 }
               },
