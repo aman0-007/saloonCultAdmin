@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:saloon_cult_admin/Authentication/authentication.dart';
 import 'package:saloon_cult_admin/colors.dart';
+import 'package:saloon_cult_admin/drawer/drawer.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class Ownermanage extends StatefulWidget {
@@ -27,23 +28,23 @@ class _OwnermanageState extends State<Ownermanage> {
   };
 
   Map<String, TimeOfDay> _openTimes = {
-    'Monday': TimeOfDay(hour: 0, minute: 0),
-    'Tuesday': TimeOfDay(hour: 0, minute: 0),
-    'Wednesday': TimeOfDay(hour: 0, minute: 0),
-    'Thursday': TimeOfDay(hour: 0, minute: 0),
-    'Friday': TimeOfDay(hour: 0, minute: 0),
-    'Saturday': TimeOfDay(hour: 0, minute: 0),
-    'Sunday': TimeOfDay(hour: 0, minute: 0),
+    'Monday': const TimeOfDay(hour: 0, minute: 0),
+    'Tuesday': const TimeOfDay(hour: 0, minute: 0),
+    'Wednesday': const TimeOfDay(hour: 0, minute: 0),
+    'Thursday': const TimeOfDay(hour: 0, minute: 0),
+    'Friday': const TimeOfDay(hour: 0, minute: 0),
+    'Saturday': const TimeOfDay(hour: 0, minute: 0),
+    'Sunday': const TimeOfDay(hour: 0, minute: 0),
   };
 
   Map<String, TimeOfDay> _closeTimes = {
-    'Monday': TimeOfDay(hour: 12, minute: 0),
-    'Tuesday': TimeOfDay(hour: 12, minute: 0),
-    'Wednesday': TimeOfDay(hour: 12, minute: 0),
-    'Thursday': TimeOfDay(hour: 12, minute: 0),
-    'Friday': TimeOfDay(hour: 12, minute: 0),
-    'Saturday': TimeOfDay(hour: 12, minute: 0),
-    'Sunday': TimeOfDay(hour: 12, minute: 0),
+    'Monday': const TimeOfDay(hour: 12, minute: 0),
+    'Tuesday': const TimeOfDay(hour: 12, minute: 0),
+    'Wednesday': const TimeOfDay(hour: 12, minute: 0),
+    'Thursday': const TimeOfDay(hour: 12, minute: 0),
+    'Friday': const TimeOfDay(hour: 12, minute: 0),
+    'Saturday': const TimeOfDay(hour: 12, minute: 0),
+    'Sunday': const TimeOfDay(hour: 12, minute: 0),
   };
 
   @override
@@ -64,17 +65,20 @@ class _OwnermanageState extends State<Ownermanage> {
             setState(() {
               _selectedDays.forEach((day, _) {
                 if (data.containsKey(day)) {
-                  _selectedDays[day] = true;
                   var timing = data[day];
                   if (timing['status'] == 'closed') {
-                    _openTimes[day] = TimeOfDay(hour: 0, minute: 0);
-                    _closeTimes[day] = TimeOfDay(hour: 0, minute: 0);
+                    _selectedDays[day] = false;
+                    _openTimes[day] = const TimeOfDay(hour: 0, minute: 0);
+                    _closeTimes[day] = const TimeOfDay(hour: 0, minute: 0);
                   } else {
+                    _selectedDays[day] = true;
                     _openTimes[day] = _timeFromString(timing['openTime']);
                     _closeTimes[day] = _timeFromString(timing['closeTime']);
                   }
                 } else {
                   _selectedDays[day] = false;
+                  _openTimes[day] = const TimeOfDay(hour: 0, minute: 0);
+                  _closeTimes[day] = const TimeOfDay(hour: 0, minute: 0);
                 }
               });
             });
@@ -106,14 +110,14 @@ class _OwnermanageState extends State<Ownermanage> {
             return AlertDialog(
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(10.0),
-                side: BorderSide(color: AppColors.primaryYellow, width: 2.0),
+                side: const BorderSide(color: AppColors.primaryYellow, width: 2.0),
               ),
               backgroundColor: Colors.black,
               content: SingleChildScrollView(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text(
+                    const Text(
                       'Select Working Days',
                       style: TextStyle(
                         color: Colors.white,
@@ -121,14 +125,14 @@ class _OwnermanageState extends State<Ownermanage> {
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                    Padding(
-                      padding: const EdgeInsets.all(8.0),
+                    const Padding(
+                      padding: EdgeInsets.all(8.0),
                       child: Divider(
                         color: AppColors.primaryYellow,
                         thickness: 1,
                       ),
                     ),
-                    SizedBox(height: 16.0),
+                    const SizedBox(height: 16.0),
                     ..._selectedDays.keys.map((day) {
                       return Column(
                         children: [
@@ -138,11 +142,11 @@ class _OwnermanageState extends State<Ownermanage> {
                             });
                           }),
                           AnimatedSwitcher(
-                            duration: Duration(milliseconds: 300),
+                            duration: const Duration(milliseconds: 300),
                             child: _selectedDays[day]!
                                 ? AnimatedOpacity(
                               opacity: _selectedDays[day]! ? 1.0 : 0.0,
-                              duration: Duration(milliseconds: 300),
+                              duration: const Duration(milliseconds: 300),
                               child: Column(
                                 children: [
                                   Row(
@@ -154,7 +158,7 @@ class _OwnermanageState extends State<Ownermanage> {
                                           _openTimes[day] = time;
                                         });
                                       }),
-                                      Text(
+                                      const Text(
                                         ':',
                                         style: TextStyle(
                                           color: Colors.white,
@@ -169,11 +173,11 @@ class _OwnermanageState extends State<Ownermanage> {
                                       }),
                                     ],
                                   ),
-                                  SizedBox(height: 16.0),
+                                  const SizedBox(height: 16.0),
                                 ],
                               ),
                             )
-                                : SizedBox.shrink(),
+                                : const SizedBox.shrink(),
                           ),
                         ],
                       );
@@ -185,22 +189,27 @@ class _OwnermanageState extends State<Ownermanage> {
                           onPressed: () {
                             Navigator.of(context).pop();
                           },
-                          child: Text(
+                          child: const Text(
                             'Cancel',
                             style: TextStyle(color: Colors.white),
                           ),
                         ),
-                        SizedBox(width: 16.0),
+                        const SizedBox(width: 16.0),
                         ElevatedButton(
                           onPressed: () async {
-                            // Call saveShopTimings here to save the updated timings
-                            await auth.saveShopTimings(_selectedDays, _openTimes, _closeTimes); // Call saveShopTimings from ShopTimingsService
+                            try {
+                              await auth.saveShopTimings(_selectedDays, _openTimes, _closeTimes);
+                              // Fetch timings after saving
+                              await _fetchTimings();
+                            } catch (e) {
+                              print('Error saving shop timings: $e');
+                            }
                             Navigator.of(context).pop();
                           },
                           style: ElevatedButton.styleFrom(
                             backgroundColor: AppColors.primaryYellow,
                           ),
-                          child: Text(
+                          child: const Text(
                             'Save',
                             style: TextStyle(color: Colors.white),
                           ),
@@ -223,9 +232,9 @@ class _OwnermanageState extends State<Ownermanage> {
       children: [
         Text(
           day,
-          style: TextStyle(color: Colors.white),
+          style: const TextStyle(color: Colors.white),
         ),
-        Spacer(),
+        const Spacer(),
         Switch(
           value: isSelected,
           onChanged: onChanged,
@@ -248,7 +257,7 @@ class _OwnermanageState extends State<Ownermanage> {
         }
       },
       child: Container(
-        padding: EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
+        padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
         decoration: BoxDecoration(
           border: Border.all(color: AppColors.primaryYellow),
           borderRadius: BorderRadius.circular(5.0),
@@ -256,7 +265,7 @@ class _OwnermanageState extends State<Ownermanage> {
         child: Text(
           '${selectedTime.format(context)}',
           textAlign: TextAlign.center,
-          style: TextStyle(
+          style: const TextStyle(
             color: AppColors.primaryYellow,
             fontSize: 16.0,
           ),
@@ -277,10 +286,10 @@ class _OwnermanageState extends State<Ownermanage> {
         ),
         iconTheme: const IconThemeData(color: Colors.white),
       ),
+      drawer: const DashboardDrawer(),
       body: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-
           Padding(
             padding: const EdgeInsets.only(left: 18.0, right: 18.0),
             child: Container(
@@ -295,8 +304,8 @@ class _OwnermanageState extends State<Ownermanage> {
                   children: [
                     Row(
                       children: [
-                        Padding(
-                          padding: const EdgeInsets.all(8.0),
+                        const Padding(
+                          padding: EdgeInsets.all(8.0),
                           child: Text(
                             'Slot Time',
                             style: TextStyle(
@@ -305,12 +314,12 @@ class _OwnermanageState extends State<Ownermanage> {
                             ),
                           ),
                         ),
-                        Spacer(),
+                        const Spacer(),
                         Padding(
                           padding: const EdgeInsets.only(top: 8.0, bottom: 8.0, right: 18.0),
                           child: Container(
-                            width: 120, // Adjusted width to fit content
-                            padding: EdgeInsets.symmetric(horizontal: 12.0),
+                            width: 120,
+                            padding: const EdgeInsets.symmetric(horizontal: 12.0),
                             decoration: BoxDecoration(
                               color: Colors.black,
                               borderRadius: BorderRadius.circular(5.0),
@@ -319,9 +328,9 @@ class _OwnermanageState extends State<Ownermanage> {
                             child: DropdownButtonHideUnderline(
                               child: DropdownButton<String>(
                                 isExpanded: true,
-                                icon: Icon(Icons.arrow_drop_down, color: AppColors.primaryYellow),
+                                icon: const Icon(Icons.arrow_drop_down, color: AppColors.primaryYellow),
                                 value: _selectedSlotTime,
-                                style: TextStyle(color: AppColors.primaryYellow), // Default text color
+                                style: const TextStyle(color: AppColors.primaryYellow),
                                 dropdownColor: Colors.black,
                                 onChanged: (String? newValue) {
                                   setState(() {
@@ -334,15 +343,15 @@ class _OwnermanageState extends State<Ownermanage> {
                                   return DropdownMenuItem<String>(
                                     value: value,
                                     child: Container(
-                                      decoration: BoxDecoration(
+                                      decoration: const BoxDecoration(
                                         border: Border(
                                           bottom: BorderSide(color: AppColors.primaryYellow),
                                         ),
                                       ),
-                                      padding: EdgeInsets.symmetric(vertical: 8.0),
+                                      padding: const EdgeInsets.symmetric(vertical: 8.0),
                                       child: Text(
                                         value,
-                                        style: TextStyle(color: AppColors.primaryYellow),
+                                        style: const TextStyle(color: AppColors.primaryYellow),
                                       ),
                                     ),
                                   );
@@ -359,15 +368,15 @@ class _OwnermanageState extends State<Ownermanage> {
             ),
           ),
 
-          SizedBox(height: 10,),
+          const SizedBox(height: 10,),
 
           Padding(
             padding: const EdgeInsets.only(left: 18.0, right: 18.0),
             child: Container(
               decoration: BoxDecoration(
                 color: Colors.black,
-                border: Border.all(color: AppColors.primaryYellow, width: 2.0), // Increased border width to 2.0
-                borderRadius: BorderRadius.circular(10.0), // Rounded corners with radius 10.0
+                border: Border.all(color: AppColors.primaryYellow, width: 2.0),
+                borderRadius: BorderRadius.circular(10.0),
               ),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -375,8 +384,8 @@ class _OwnermanageState extends State<Ownermanage> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Padding(
-                        padding: const EdgeInsets.all(8.0),
+                      const Padding(
+                        padding: EdgeInsets.all(8.0),
                         child: Text(
                           'Shop Timing',
                           style: TextStyle(
@@ -387,9 +396,9 @@ class _OwnermanageState extends State<Ownermanage> {
                         ),
                       ),
                       GestureDetector(
-                        onTap: _showEditDialog, // Show dialog on edit icon click
-                        child: Padding(
-                          padding: const EdgeInsets.all(8.0),
+                        onTap: _showEditDialog,
+                        child: const Padding(
+                          padding: EdgeInsets.all(8.0),
                           child: Icon(
                             Icons.edit,
                             color: AppColors.primaryYellow,
@@ -398,8 +407,8 @@ class _OwnermanageState extends State<Ownermanage> {
                       ),
                     ],
                   ),
-                  Padding(
-                    padding: const EdgeInsets.all(8.0),
+                  const Padding(
+                    padding: EdgeInsets.all(8.0),
                     child: Divider(
                       color: AppColors.primaryYellow,
                       thickness: 1,
@@ -407,41 +416,28 @@ class _OwnermanageState extends State<Ownermanage> {
                   ),
                   ..._selectedDays.keys.map((day) {
                     return Padding(
-                      padding: const EdgeInsets.only(left: 8.0,right: 8.0,bottom: 10.0),
+                      padding: const EdgeInsets.only(left: 8.0, right: 8.0, bottom: 10.0),
                       child: Column(
                         children: [
-                          _selectedDays[day]!
-                              ? Column(
-                            children: [
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Text(
-                                    day,
-                                    style: TextStyle(color: Colors.white),
-                                  ),
-                                  Text(
-                                    '${_openTimes[day]!.format(context)} - ${_closeTimes[day]!.format(context)}',
-                                    style: TextStyle(color: Colors.white),
-                                  ),
-                                ],
-                              ),
-                              SizedBox(height: 8.0),
-                            ],
-                          )
-                              : Row(
+                          Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               Text(
                                 day,
-                                style: TextStyle(color: Colors.white),
+                                style: const TextStyle(color: Colors.white),
                               ),
-                              Text(
+                              _selectedDays[day]!
+                                  ? Text(
+                                '${_openTimes[day]!.format(context)} - ${_closeTimes[day]!.format(context)}',
+                                style: const TextStyle(color: Colors.white),
+                              )
+                                  : const Text(
                                 'Closed',
                                 style: TextStyle(color: Colors.redAccent),
                               ),
                             ],
                           ),
+                          const SizedBox(height: 8.0),
                         ],
                       ),
                     );
@@ -454,4 +450,7 @@ class _OwnermanageState extends State<Ownermanage> {
       ),
     );
   }
+
+
+
 }
