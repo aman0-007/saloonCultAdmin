@@ -1,24 +1,25 @@
 import 'package:flutter/material.dart';
 import 'package:saloon_cult_admin/Authentication/authentication.dart';
-import 'package:saloon_cult_admin/Manage/Manage.dart';
+import 'package:saloon_cult_admin/Employ%20Side/appointments.dart';
+import 'package:saloon_cult_admin/Employ%20Side/empdashboard.dart';
+import 'package:saloon_cult_admin/Employ%20Side/empdata.dart';
 import 'package:saloon_cult_admin/account/accountoption.dart';
 import 'package:saloon_cult_admin/colors.dart';
-import 'package:saloon_cult_admin/dashboard.dart';
-import 'package:saloon_cult_admin/employee/manageemployee.dart';
-import 'package:saloon_cult_admin/menu/managemenu.dart';
 
-class DashboardDrawer extends StatelessWidget {
-  const DashboardDrawer({super.key});
+class EmployeeDrawer extends StatelessWidget {
+  const EmployeeDrawer({Key? key}) : super(key: key);
+
   @override
   Widget build(BuildContext context) {
-    final Authentication auth = Authentication();
+    final userData = UserData(); // Get user data singleton instance
+
     return Drawer(
       child: Container(
         color: Colors.white,
         child: Column(
           children: <Widget>[
-            const DrawerHeader(
-              decoration: BoxDecoration(
+            DrawerHeader(
+              decoration: const BoxDecoration(
                 color: AppColors.primaryYellow,
               ),
               child: Row(
@@ -27,16 +28,21 @@ class DashboardDrawer extends StatelessWidget {
                   CircleAvatar(
                     radius: 30,
                     backgroundColor: Colors.white,
-                    child: Icon(
+                    backgroundImage: userData.profileImageUrl != null
+                        ? NetworkImage(userData.profileImageUrl!)
+                        : null,
+                    child: userData.profileImageUrl == null
+                        ? const Icon(
                       Icons.person,
                       size: 40,
                       color: AppColors.primaryYellow,
-                    ),
+                    )
+                        : null,
                   ),
-                  SizedBox(width: 10),
+                  const SizedBox(width: 10),
                   Text(
-                    'Dashboard Menu',
-                    style: TextStyle(
+                    userData.userName ?? 'Loading...',
+                    style: const TextStyle(
                       color: Colors.white,
                       fontSize: 20,
                     ),
@@ -52,9 +58,10 @@ class DashboardDrawer extends StatelessWidget {
                     leading: const Icon(Icons.home, color: AppColors.primaryYellow),
                     title: const Text('Home', style: TextStyle(color: AppColors.primaryYellow)),
                     onTap: () {
-                      Navigator.pushReplacement(
+                      Navigator.pop(context);
+                      Navigator.push(
                         context,
-                        MaterialPageRoute(builder: (context) => const Dashboard()),
+                        MaterialPageRoute(builder: (context) => const EmployeeDashboard()),
                       );
                     },
                   ),
@@ -63,50 +70,29 @@ class DashboardDrawer extends StatelessWidget {
                     title: const Text('Profile', style: TextStyle(color: AppColors.primaryYellow)),
                     onTap: () {
                       Navigator.pop(context);
-                      // Navigator.push(
-                      //   context,
-                      //   MaterialPageRoute(builder: (context) => const Shopprofile()),
-                      // );
-                    },
-                  ),
-                  ListTile(
-                    leading: const Icon(Icons.menu, color: AppColors.primaryYellow),
-                    title: const Text('Menu', style: TextStyle(color: AppColors.primaryYellow)),
-                    onTap: () {
-                      Navigator.pop(context);
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (context) => const MenuManagement()),
-                      );
-                    },
-                  ),
-                  ListTile(
-                    leading: const Icon(Icons.people, color: AppColors.primaryYellow),
-                    title: const Text('Employee', style: TextStyle(color: AppColors.primaryYellow)),
-                    onTap: () {
-                      Navigator.pop(context);
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (context) => const Employeemangement()),
-                      );
+                      // Add navigation to profile page if needed
                     },
                   ),
                   ListTile(
                     leading: const Icon(Icons.calendar_today, color: AppColors.primaryYellow),
                     title: const Text('Appointments', style: TextStyle(color: AppColors.primaryYellow)),
                     onTap: () {
-                      // Navigate to appointments
+                      Navigator.pop(context);
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const Appointments()),
+                      );
                     },
                   ),
                   ListTile(
                     leading: const Icon(Icons.settings, color: AppColors.primaryYellow),
                     title: const Text('Manage', style: TextStyle(color: AppColors.primaryYellow)),
                     onTap: () {
-                      Navigator.pop(context);
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (context) => const Ownermanage()),
-                      );
+                      // Navigator.pop(context);
+                      // Navigator.push(
+                      //   context,
+                      //   MaterialPageRoute(builder: (context) => const Ownermanage()),
+                      // );
                     },
                   ),
                   const Divider(),
@@ -114,10 +100,11 @@ class DashboardDrawer extends StatelessWidget {
                     leading: const Icon(Icons.exit_to_app, color: Colors.redAccent),
                     title: const Text('Sign Out', style: TextStyle(color: Colors.redAccent)),
                     onTap: () async {
-                      await auth.signOut(context);  // Call the signOut function
+                      final auth = Authentication();
+                      await auth.signOut(context);
                       Navigator.pushReplacement(
                         context,
-                        MaterialPageRoute(builder: (context) => const Accountoptionpage()), // Replace with your actual login page widget
+                        MaterialPageRoute(builder: (context) => const Accountoptionpage()),
                       );
                     },
                   ),
