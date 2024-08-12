@@ -5,6 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:saloon_cult_admin/Employ%20Side/empdashboard.dart';
+import 'package:saloon_cult_admin/dashboard.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:saloon_cult_admin/account/Register.dart';
 
@@ -88,11 +90,26 @@ class Authentication {
         // Save user ID to SharedPreferences
         SharedPreferences prefs = await SharedPreferences.getInstance();
         await prefs.setString('userId', user.uid);
+
+        // Check if the user ID exists in the employees collection
+        DocumentSnapshot employeeSnapshot = await FirebaseFirestore.instance
+            .collection('employees')
+            .doc(user.uid)
+            .get();
+
+        if (employeeSnapshot.exists) {
+          // Navigate to empdashboard if the user is an employee
+          Navigator.of(context).push(MaterialPageRoute(builder: (context) => EmployeeDashboard()));
+        } else {
+          // Navigate to the original destination if the user is not an employee
+          Navigator.of(context).push(MaterialPageRoute(builder: (context) => Dashboard()));
+        }
       }
     } catch (e) {
       print('Sign-in failed: $e');
     }
   }
+
 
   Future<void> registerEmployeeWithEmailAndPassword(
       BuildContext context,
@@ -134,8 +151,16 @@ class Authentication {
         'mobileNumber': mobileNumber,
         'email': email,
         'profileImage': profileImageUrl,
+        'shopID':userId
       });
 
+      await firestore.collection('employees').doc(userCredential.user?.uid).set({
+        'name': employeeName,
+        'mobile': mobileNumber,
+        'email': email,
+        'profileImage': profileImageUrl,
+        'shopId': userId,  // Save the shop ID here
+      });
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Employee registration successful')),
       );
