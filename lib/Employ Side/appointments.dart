@@ -18,7 +18,7 @@ class _AppointmentsState extends State<Appointments> {
   Map<String, dynamic>? _shopTimings; // To store shop timings
   String _statusMessage = ''; // To store status message for closed days
   late String _employeeId; // Employee ID
-  Map<String, String> defaultTimeSlots = {};
+  Map<String, Map<String, String>> defaultTimeSlots = {};
 
 
   @override
@@ -158,8 +158,8 @@ class _AppointmentsState extends State<Appointments> {
       defaultTimeSlots = _initializeTimeSlotsFromShopTimings(date); // Initialize time slots
 
       print('Time slots for ${DateFormat('yyyy-MM-dd').format(date)}:');
-      defaultTimeSlots.forEach((time, status) {
-        print('$time: $status');
+      defaultTimeSlots.forEach((time, details) {
+        print('$time: $details');
       });
 
       SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -196,25 +196,39 @@ class _AppointmentsState extends State<Appointments> {
         print('Month document already exists for $monthYear.');
       }
 
-      // Create or update the day document with time slots directly
+      // Fetch the day document to get the time slots
       DocumentReference dayDocRef = monthDocRef.collection('days').doc(DateFormat('yyyy-MM-dd').format(date));
 
       DocumentSnapshot dayDoc = await dayDocRef.get();
-      if (!dayDoc.exists) {
-        await dayDocRef.set({
-          'timeSlots': defaultTimeSlots
-        });
-        print('Created new day document for ${DateFormat('yyyy-MM-dd').format(date)}.');
+      if (dayDoc.exists) {
+        var dayData = dayDoc.data() as Map<String, dynamic>?;
+        if (dayData != null && dayData.containsKey('timeSlots')) {
+          var dbTimeSlots = dayData['timeSlots'] as Map<String, dynamic>;
+          dbTimeSlots.forEach((time, details) {
+            if (defaultTimeSlots.containsKey(time)) {
+              defaultTimeSlots[time]?['status'] = details['status'] as String;  // Update the status from Firestore
+            }
+          });
+          print('Updated time slots with Firestore data.');
+        } else {
+          print('No time slots found in Firestore for this day.');
+        }
       } else {
-        print('Day document already exists for ${DateFormat('yyyy-MM-dd').format(date)}.');
+        // If the day document doesn't exist, create it with the default time slots
+        await dayDocRef.set({'timeSlots': defaultTimeSlots});
+        print('Created new day document for ${DateFormat('yyyy-MM-dd').format(date)}.');
       }
+
+      setState(() {
+        // Refresh the UI with the updated time slots
+      });
 
     } catch (e) {
       print('Error handling new day: $e');
     }
   }
 
-  Map<String, String> _initializeTimeSlotsFromShopTimings(DateTime date) {
+  Map<String, Map<String, String>> _initializeTimeSlotsFromShopTimings(DateTime date) {
     if (_shopTimings == null) {
       return {}; // Return an empty map if shop timings are not available
     }
@@ -234,7 +248,7 @@ class _AppointmentsState extends State<Appointments> {
     TimeOfDay openTime = _parseTime(timingsMap['openTime'] ?? '');
     TimeOfDay closeTime = _parseTime(timingsMap['closeTime'] ?? '');
 
-    Map<String, String> slots = {};
+    Map<String, Map<String, String>> slots = {};
     DateTime currentTime = DateTime(
       date.year,
       date.month,
@@ -258,7 +272,10 @@ class _AppointmentsState extends State<Appointments> {
 
     while (currentTime.isBefore(closeDateTime)) {
       String timeStr = DateFormat('h:mm a').format(currentTime);
-      slots[timeStr] = 'no';
+      slots[timeStr] = {
+        'status': 'no',
+        // Add more fields here if you want to store extra information
+      };
       currentTime = currentTime.add(const Duration(minutes: 60));
     }
 
@@ -292,45 +309,9 @@ class _AppointmentsState extends State<Appointments> {
       );
     }
 
-    String? openTimeStr = timings['openTime'] as String?;
-    String? closeTimeStr = timings['closeTime'] as String?;
-
-    if (openTimeStr == null || closeTimeStr == null) {
-      return Center(
-        child: Text(
-          'Invalid Timing Data',
-          style: TextStyle(color: Colors.white.withOpacity(0.7), fontSize: 18.0),
-        ),
-      );
-    }
-
-    TimeOfDay openTime = _parseTime(openTimeStr);
-    TimeOfDay closeTime = _parseTime(closeTimeStr);
-
     List<Widget> timeBlocks = [];
-    DateTime currentTime = DateTime(
-      selectedDate.year,
-      selectedDate.month,
-      selectedDate.day,
-      openTime.hour,
-      openTime.minute,
-    );
-
-    DateTime closeDateTime = DateTime(
-      selectedDate.year,
-      selectedDate.month,
-      selectedDate.day,
-      closeTime.hour,
-      closeTime.minute,
-    );
-
-    if (closeTime.hour < openTime.hour || (closeTime.hour == openTime.hour && closeTime.minute < openTime.minute)) {
-      closeDateTime = closeDateTime.add(const Duration(days: 1));
-    }
-
-    while (currentTime.isBefore(closeDateTime)) {
-      String timeSlot = DateFormat('h:mm a').format(currentTime);
-      String status = defaultTimeSlots[timeSlot] ?? 'no';
+    defaultTimeSlots.forEach((timeSlot, details) {
+      String status = details['status'] ?? 'no';
 
       Color backgroundColor;
       Color borderColor;
@@ -342,15 +323,17 @@ class _AppointmentsState extends State<Appointments> {
           borderColor = Colors.black;
           textColor = Colors.black;
           break;
-        case 'no':
+        case 'yes':
           backgroundColor = const Color(0xFF171717);
-          borderColor = const Color(0xFF212121).withOpacity(0.5); // Dimmed border color
-          textColor = Colors.white.withOpacity(0.7); // Dimmed text color
+          borderColor = const Color(0xFF212121).withOpacity(0.3); // More dimmed border color
+          textColor = Colors.white.withOpacity(0.3); // More dimmed text color
           break;
+        case 'no':
         default:
-          backgroundColor = Colors.grey;
-          borderColor = Colors.black;
-          textColor = Colors.white;
+          backgroundColor = const Color(0xFF171717);
+          borderColor = const Color(0xFF212121);
+          textColor = Colors.white.withOpacity(0.7); // Standard color
+          break;
       }
 
       timeBlocks.add(
@@ -375,8 +358,7 @@ class _AppointmentsState extends State<Appointments> {
           ),
         ),
       );
-      currentTime = currentTime.add(const Duration(hours: 1));
-    }
+    });
 
     return Wrap(
       spacing: 8.0,
@@ -384,6 +366,7 @@ class _AppointmentsState extends State<Appointments> {
       children: timeBlocks,
     );
   }
+
 
   TimeOfDay _parseTime(String timeStr) {
     try {
@@ -415,7 +398,7 @@ class _AppointmentsState extends State<Appointments> {
 
     try {
       await dayDocRef.update({
-        'timeSlots.$timeSlot': newStatus,
+        'timeSlots.$timeSlot.status': newStatus, // Update nested field
       });
       print('Time slot updated successfully.');
       _fetchShopTimings(); // Refresh the data
@@ -426,21 +409,9 @@ class _AppointmentsState extends State<Appointments> {
   }
 
   Future<void> _handleTimeSlotTap(String timeSlot) async {
-    // Get the currently selected date
     DateTime selectedDate = DateTime.now().add(Duration(days: _selectedIndex));
-
-    String currentStatus = await _getTimeSlotStatus(timeSlot, selectedDate); // Pass selectedDate
-
-    String action;
-    if (currentStatus == 'no') {
-      action = 'disable';
-    } else if (currentStatus == 'yes') {
-      action = 'enable';
-    } else if (currentStatus == 'booked') {
-      action = 'view details'; // Or any other action if needed
-    } else {
-      action = 'unknown'; // For unknown statuses
-    }
+    String currentStatus = await _getTimeSlotStatus(timeSlot, selectedDate);
+    String action = currentStatus == 'no' ? 'disable' : (currentStatus == 'yes' ? 'enable' : 'view details');
 
     if (action != 'view details') {
       bool? confirm = await showDialog<bool>(
@@ -464,10 +435,10 @@ class _AppointmentsState extends State<Appointments> {
 
       if (confirm == true) {
         String newStatus = currentStatus == 'yes' ? 'no' : 'yes';
-        await _updateTimeSlotStatus(timeSlot, newStatus, selectedDate); // Pass selectedDate
+        await _updateTimeSlotStatus(timeSlot, newStatus, selectedDate);
+        setState(() {}); // Trigger a UI refresh immediately
       }
     } else {
-      // Handle viewing details for booked slots if needed
       await showDialog(
         context: context,
         builder: (BuildContext context) {
@@ -512,8 +483,10 @@ class _AppointmentsState extends State<Appointments> {
         if (data != null && data is Map<String, dynamic>) {
           var timeSlots = data['timeSlots'];
           if (timeSlots is Map<String, dynamic>) {
-            // Safely retrieve the time slot status
-            return timeSlots[timeSlot] as String? ?? 'no';
+            var slotData = timeSlots[timeSlot] as Map<String, dynamic>?;
+            if (slotData != null) {
+              return slotData['status'] as String? ?? 'no'; // Safely retrieve the time slot status
+            }
           }
         }
         return 'no'; // Default value if not found
