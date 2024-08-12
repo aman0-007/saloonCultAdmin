@@ -1,11 +1,10 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart'; // For date formatting
+import 'package:intl/intl.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:saloon_cult_admin/Employ%20Side/empdata.dart';
 import 'package:saloon_cult_admin/Employ%20Side/empdrawer.dart';
 import 'package:saloon_cult_admin/colors.dart';
-import 'package:shared_preferences/shared_preferences.dart'; // Assuming this is where AppColors is defined
+import 'package:shared_preferences/shared_preferences.dart';
 
 class Appointments extends StatefulWidget {
   const Appointments({super.key});
@@ -19,6 +18,8 @@ class _AppointmentsState extends State<Appointments> {
   Map<String, dynamic>? _shopTimings; // To store shop timings
   String _statusMessage = ''; // To store status message for closed days
   late String _employeeId; // Employee ID
+  Map<String, String> defaultTimeSlots = {};
+
 
   @override
   void initState() {
@@ -53,7 +54,6 @@ class _AppointmentsState extends State<Appointments> {
       print('Shop ID is null.');
     }
   }
-
 
   Future<void> _fetchEmployeeId() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -155,12 +155,7 @@ class _AppointmentsState extends State<Appointments> {
   Future<void> _handleNewDay(DateTime date) async {
     try {
       // Initialize time slots
-      Map<String, dynamic> defaultTimeSlots = _initializeTimeSlotsFromShopTimings(date);
-
-      if (defaultTimeSlots.isEmpty) {
-        print('Holiday');
-        return; // No need to continue if it's a holiday
-      }
+      defaultTimeSlots = _initializeTimeSlotsFromShopTimings(date); // Initialize time slots
 
       print('Time slots for ${DateFormat('yyyy-MM-dd').format(date)}:');
       defaultTimeSlots.forEach((time, status) {
@@ -188,42 +183,30 @@ class _AppointmentsState extends State<Appointments> {
       String monthYear = DateFormat('MMMM yyyy').format(date);
       DocumentReference monthDocRef = appointmentsCollection.doc(monthYear);
 
-      // Create month document if it does not exist
       DocumentSnapshot monthDoc = await monthDocRef.get();
       if (!monthDoc.exists) {
-        await monthDocRef.set({}); // Create empty document
-        print('Created new month document for $monthYear.');
+        try {
+          // Create an empty document with dummy data
+          await monthDocRef.set({'initialized': true});
+          print('Successfully created empty document.');
+        } catch (e) {
+          print('Error creating document: $e');
+        }
       } else {
         print('Month document already exists for $monthYear.');
       }
 
-      // Create day document and subcollection if they do not exist
+      // Create or update the day document with time slots directly
       DocumentReference dayDocRef = monthDocRef.collection('days').doc(DateFormat('yyyy-MM-dd').format(date));
 
       DocumentSnapshot dayDoc = await dayDocRef.get();
       if (!dayDoc.exists) {
-        await dayDocRef.set({'timeSlots': {}}); // Create document with empty timeSlots
+        await dayDocRef.set({
+          'timeSlots': defaultTimeSlots
+        });
         print('Created new day document for ${DateFormat('yyyy-MM-dd').format(date)}.');
       } else {
         print('Day document already exists for ${DateFormat('yyyy-MM-dd').format(date)}.');
-      }
-
-      // Creating timeSlots subcollection if needed
-      CollectionReference timeSlotsCollection = dayDocRef.collection('timeSlots');
-      QuerySnapshot timeSlotsQuery = await timeSlotsCollection.get();
-      if (timeSlotsQuery.docs.isEmpty) {
-        for (MapEntry<String, dynamic> entry in defaultTimeSlots.entries) {
-          String timeSlot = entry.key;
-          dynamic status = entry.value;
-
-          DocumentReference timeSlotDocRef = timeSlotsCollection.doc(timeSlot);
-
-          // Create document for each time slot with initial data
-          await timeSlotDocRef.set({'status': status});
-          print('Created new time slot document for $timeSlot with status $status.');
-        }
-      } else {
-        print('TimeSlots subcollection already exists.');
       }
 
     } catch (e) {
@@ -231,7 +214,7 @@ class _AppointmentsState extends State<Appointments> {
     }
   }
 
-  Map<String, dynamic> _initializeTimeSlotsFromShopTimings(DateTime date) {
+  Map<String, String> _initializeTimeSlotsFromShopTimings(DateTime date) {
     if (_shopTimings == null) {
       return {}; // Return an empty map if shop timings are not available
     }
@@ -244,13 +227,14 @@ class _AppointmentsState extends State<Appointments> {
       return {}; // Return an empty map if no timings are available or data is not in the expected format
     }
 
-    // Convert to Map<String, dynamic>
-    Map<String, dynamic> timingsMap = Map<String, dynamic>.from(timings as Map<dynamic, dynamic>);
+    // Convert to Map<String, String>
+    Map<String, String> timingsMap = timings.map<String, String>((key, value) =>
+        MapEntry(key.toString(), value.toString()));
 
-    TimeOfDay openTime = _parseTime(timingsMap['openTime'] as String? ?? '');
-    TimeOfDay closeTime = _parseTime(timingsMap['closeTime'] as String? ?? '');
+    TimeOfDay openTime = _parseTime(timingsMap['openTime'] ?? '');
+    TimeOfDay closeTime = _parseTime(timingsMap['closeTime'] ?? '');
 
-    Map<String, dynamic> slots = {};
+    Map<String, String> slots = {};
     DateTime currentTime = DateTime(
       date.year,
       date.month,
@@ -308,25 +292,6 @@ class _AppointmentsState extends State<Appointments> {
       );
     }
 
-    String? status = timings['status'] as String?;
-    if (status == 'closed') {
-      return Center(
-        child: Container(
-          margin: const EdgeInsets.symmetric(vertical: 16.0),
-          padding: const EdgeInsets.symmetric(vertical: 16.0, horizontal: 24.0),
-          decoration: BoxDecoration(
-            color: const Color(0xFF171717),
-            borderRadius: BorderRadius.circular(12.0),
-            border: Border.all(color: const Color(0xFF212121)),
-          ),
-          child: Text(
-            'Enjoy Holiday',
-            style: const TextStyle(color: Colors.white, fontSize: 18.0),
-          ),
-        ),
-      );
-    }
-
     String? openTimeStr = timings['openTime'] as String?;
     String? closeTimeStr = timings['closeTime'] as String?;
 
@@ -364,26 +329,52 @@ class _AppointmentsState extends State<Appointments> {
     }
 
     while (currentTime.isBefore(closeDateTime)) {
+      String timeSlot = DateFormat('h:mm a').format(currentTime);
+      String status = defaultTimeSlots[timeSlot] ?? 'no';
+
+      Color backgroundColor;
+      Color borderColor;
+      Color textColor;
+
+      switch (status) {
+        case 'booked':
+          backgroundColor = Colors.yellow;
+          borderColor = Colors.black;
+          textColor = Colors.black;
+          break;
+        case 'no':
+          backgroundColor = const Color(0xFF171717);
+          borderColor = const Color(0xFF212121).withOpacity(0.5); // Dimmed border color
+          textColor = Colors.white.withOpacity(0.7); // Dimmed text color
+          break;
+        default:
+          backgroundColor = Colors.grey;
+          borderColor = Colors.black;
+          textColor = Colors.white;
+      }
+
       timeBlocks.add(
-        Container(
-          width: (MediaQuery.of(context).size.width - 40) / 2,
-          height: 50.0,
-          margin: const EdgeInsets.only(left: 9.0, right: 4.0, top: 4.0, bottom: 4.0),
-          padding: const EdgeInsets.symmetric(horizontal: 10.0, vertical: 3.0),
-          decoration: BoxDecoration(
-            color: const Color(0xFF171717),
-            borderRadius: BorderRadius.circular(8.0),
-            border: Border.all(color: const Color(0xFF212121)),
-          ),
-          child: Center(
-            child: Text(
-              DateFormat('h:mm a').format(currentTime),
-              style: const TextStyle(color: Colors.white, fontSize: 14.0),
+        GestureDetector(
+          onTap: () => _handleTimeSlotTap(timeSlot),
+          child: Container(
+            width: (MediaQuery.of(context).size.width - 40) / 2,
+            height: 50.0,
+            margin: const EdgeInsets.only(left: 9.0, right: 4.0, top: 4.0, bottom: 4.0),
+            padding: const EdgeInsets.symmetric(horizontal: 10.0, vertical: 3.0),
+            decoration: BoxDecoration(
+              color: backgroundColor,
+              borderRadius: BorderRadius.circular(8.0),
+              border: Border.all(color: borderColor),
+            ),
+            child: Center(
+              child: Text(
+                timeSlot,
+                style: TextStyle(color: textColor, fontSize: 14.0),
+              ),
             ),
           ),
         ),
       );
-
       currentTime = currentTime.add(const Duration(hours: 1));
     }
 
@@ -401,6 +392,136 @@ class _AppointmentsState extends State<Appointments> {
     } catch (e) {
       print('Error parsing time: $e');
       return const TimeOfDay(hour: 0, minute: 0); // Handle error or default value
+    }
+  }
+
+  Future<void> _updateTimeSlotStatus(String timeSlot, String newStatus, DateTime selectedDate) async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? userId = prefs.getString('userId');
+
+    if (userId == null) {
+      print('User ID not found.');
+      return;
+    }
+
+    String monthYear = DateFormat('MMMM yyyy').format(selectedDate);
+    DocumentReference dayDocRef = FirebaseFirestore.instance
+        .collection('employees')
+        .doc(userId)
+        .collection('appointments')
+        .doc(monthYear)
+        .collection('days')
+        .doc(DateFormat('yyyy-MM-dd').format(selectedDate));
+
+    try {
+      await dayDocRef.update({
+        'timeSlots.$timeSlot': newStatus,
+      });
+      print('Time slot updated successfully.');
+      _fetchShopTimings(); // Refresh the data
+      setState(() {}); // Refresh the UI
+    } catch (e) {
+      print('Error updating time slot: $e');
+    }
+  }
+
+  Future<void> _handleTimeSlotTap(String timeSlot) async {
+    // Get the currently selected date
+    DateTime selectedDate = DateTime.now().add(Duration(days: _selectedIndex));
+
+    String currentStatus = await _getTimeSlotStatus(timeSlot, selectedDate); // Pass selectedDate
+
+    String action;
+    if (currentStatus == 'no') {
+      action = 'disable';
+    } else if (currentStatus == 'yes') {
+      action = 'enable';
+    } else if (currentStatus == 'booked') {
+      action = 'view details'; // Or any other action if needed
+    } else {
+      action = 'unknown'; // For unknown statuses
+    }
+
+    if (action != 'view details') {
+      bool? confirm = await showDialog<bool>(
+        context: context,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            title: Text('Are you sure you want to $action this time slot?'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(true),
+                child: Text('Yes'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(false),
+                child: Text('No'),
+              ),
+            ],
+          );
+        },
+      );
+
+      if (confirm == true) {
+        String newStatus = currentStatus == 'yes' ? 'no' : 'yes';
+        await _updateTimeSlotStatus(timeSlot, newStatus, selectedDate); // Pass selectedDate
+      }
+    } else {
+      // Handle viewing details for booked slots if needed
+      await showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            title: Text('Slot Booked'),
+            content: Text('This slot is booked by a customer.'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: Text('OK'),
+              ),
+            ],
+          );
+        },
+      );
+    }
+  }
+
+  Future<String> _getTimeSlotStatus(String timeSlot, DateTime selectedDate) async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? userId = prefs.getString('userId');
+
+    if (userId == null) {
+      print('User ID not found.');
+      return 'no'; // Default value
+    }
+
+    String monthYear = DateFormat('MMMM yyyy').format(selectedDate);
+    DocumentReference dayDocRef = FirebaseFirestore.instance
+        .collection('employees')
+        .doc(userId)
+        .collection('appointments')
+        .doc(monthYear)
+        .collection('days')
+        .doc(DateFormat('yyyy-MM-dd').format(selectedDate));
+
+    try {
+      DocumentSnapshot dayDoc = await dayDocRef.get();
+      if (dayDoc.exists) {
+        // Ensure the data is a Map<String, dynamic>
+        var data = dayDoc.data();
+        if (data != null && data is Map<String, dynamic>) {
+          var timeSlots = data['timeSlots'];
+          if (timeSlots is Map<String, dynamic>) {
+            // Safely retrieve the time slot status
+            return timeSlots[timeSlot] as String? ?? 'no';
+          }
+        }
+        return 'no'; // Default value if not found
+      }
+      return 'no'; // Default value if document does not exist
+    } catch (e) {
+      print('Error fetching time slot status: $e');
+      return 'no'; // Default value in case of error
     }
   }
 
