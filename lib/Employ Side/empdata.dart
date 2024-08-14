@@ -24,6 +24,7 @@ class UserData {
         userName = userDoc['name'];
         profileImageUrl = userDoc['profileImage'];
         shopId = userDoc['shopId'];
+        print("=========================================================================");
         print("$shopId");
         print("$userName");
       }

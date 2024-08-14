@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -16,18 +17,6 @@ class Authentication {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final ImagePicker _picker = ImagePicker();
 
-  final Map<String, bool> _selectedDays = {
-    'Monday': false,
-    'Tuesday': false,
-    'Wednesday': false,
-    'Thursday': false,
-    'Friday': false,
-    'Saturday': false,
-    'Sunday': false,
-  };
-
-  final Map<String, TimeOfDay?> _openTimes = {};
-  final Map<String, TimeOfDay?> _closeTimes = {};
 
   Future<void> registerShopWithEmailAndPassword(BuildContext context, String shopName, File profileImage, File bannerImage, Position currentPosition, String address, String email, String password) async {
     try {
@@ -98,6 +87,10 @@ class Authentication {
             .get();
 
         if (employeeSnapshot.exists) {
+
+          String employeeId = userCredential.user!.uid;
+
+          await _saveEmployeeFCMToken(employeeId);
           // Navigate to empdashboard if the user is an employee
           Navigator.of(context).push(MaterialPageRoute(builder: (context) => EmployeeDashboard()));
         } else {
@@ -110,6 +103,15 @@ class Authentication {
     }
   }
 
+  Future<void> _saveEmployeeFCMToken(String employeeId) async {
+    String? fcmToken = await FirebaseMessaging.instance.getToken();
+    if (fcmToken != null) {
+      await FirebaseFirestore.instance
+          .collection('employees')
+          .doc(employeeId)
+          .update({'fcmToken': fcmToken});
+    }
+  }
 
   Future<void> registerEmployeeWithEmailAndPassword(
       BuildContext context,
