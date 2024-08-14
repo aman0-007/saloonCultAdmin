@@ -16,7 +16,7 @@ class UserData {
   Future<void> loadUserData() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     String? userId = prefs.getString('userId');
-
+    print("$userId");
     if (userId != null) {
       DocumentSnapshot userDoc = await FirebaseFirestore.instance.collection('employees').doc(userId).get();
 
