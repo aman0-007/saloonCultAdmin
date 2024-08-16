@@ -104,14 +104,22 @@ class Authentication {
   }
 
   Future<void> _saveEmployeeFCMToken(String employeeId) async {
-    String? fcmToken = await FirebaseMessaging.instance.getToken();
-    if (fcmToken != null) {
-      await FirebaseFirestore.instance
-          .collection('employees')
-          .doc(employeeId)
-          .update({'fcmToken': fcmToken});
+    try {
+      // Get the current FCM token
+      String? fcmToken = await FirebaseMessaging.instance.getToken();
+
+      if (fcmToken != null) {
+        // Save the token to Firestore under the employee document
+        await FirebaseFirestore.instance
+            .collection('employees')
+            .doc(employeeId)
+            .update({'fcmToken': fcmToken});
+      }
+    } catch (e) {
+      print('Error saving FCM token: $e');
     }
   }
+
 
   Future<void> registerEmployeeWithEmailAndPassword(
       BuildContext context,

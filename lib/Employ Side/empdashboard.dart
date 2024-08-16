@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:saloon_cult_admin/notification.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:saloon_cult_admin/Employ%20Side/empdrawer.dart';
 import 'package:saloon_cult_admin/colors.dart';
@@ -15,10 +16,21 @@ class _EmployeeDashboardState extends State<EmployeeDashboard> {
   String? _userName;
   String? _profileImageUrl;
 
+  NotificationServices notificationServices = NotificationServices();
+
+
   @override
   void initState() {
     super.initState();
     _fetchUserData();
+    notificationServices.requestNotificationPermission();
+
+    notificationServices.isTokenRefresh();
+
+    notificationServices.getDeviceToken().then((value){
+      print('Device Token');
+      print(value);
+    });
   }
 
   Future<void> _fetchUserData() async {
