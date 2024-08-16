@@ -95,6 +95,7 @@ class EmployeeDrawer extends StatelessWidget {
                       // );
                     },
                   ),
+
                   const Divider(),
                   ListTile(
                     leading: const Icon(Icons.exit_to_app, color: Colors.redAccent),
